@@ -1,93 +1,191 @@
-# Trax — Stage 2: Practical Build Assessment
+# Trax — Fleet Management Dashboard
 
-## Context
+## PR Summary
 
-Zenduit wants to create a workflow screen for fleet managers to monitor
-submissions, exceptions, or operational events. Users need to switch
-between list and map views, filter data, inspect records quickly,
-understand status, and export the right information. Support feedback
-suggests the current experience is functional but slow to reason about
-and prone to missed edge cases.
+**What this does:** Replaces the minimal vehicle list starter with a fully featured two-page fleet management dashboard covering vehicles and accounts. Filtering, sorting, pagination, map view, and rich detail modals are all wired up across both pages.
 
-This repository is a small Angular app showing a list of fleet vehicles
-backed by a static JSON dataset (`public/dataset/`). It works — but it's
-rough on purpose. Treat it as the starting point, not the spec.
+**Why:** The original scaffold was a read-only table with no filtering, no navigation, no detail view, and no map. Fleet managers need to find specific vehicles quickly, understand status at a glance, dig into events and device health, and navigate across accounts — none of that existed.
 
-## Your role
+**Scope of change:** New domain modules for `accounts`, `events`, `devices`, `users`, `exports`, and `layout`. The `vehicles` module was heavily extended. All data filtering moved into the service layer. Angular signals and `toObservable` + `switchMap` used throughout for reactive state without manual subscription management.
 
-Act as a **Product Developer / Engineer**, not a pure UI implementer.
-Start by defining the problem, clarifying assumptions, and proposing a
-bounded improvement you can safely ship. Then implement a working slice
-and own the validation of your solution.
+**Known limitations:**
+- All data is static JSON — filtering and pagination are client-side. In production these would be server-side query params.
+- The vehicle detail modal looks up account by name string match. A proper implementation would pass `account_id` through to the view model.
+- No authentication — permissions exist in the data but are not enforced in the UI.
+- Map performance is bounded by viewport filtering but would need marker clustering at scale.
 
-## Stack
+---
 
-- Angular 21 (standalone components, signals)
-- Vitest for unit tests
-- Static dataset served from `public/dataset/` (vehicles, devices,
-  accounts, users, events, exports, permissions)
-
-## Run it
+## Getting started
 
 ```bash
 npm install
-npm start    # http://localhost:4200
+npm start      # http://localhost:4200
 npm test
 npm run build
 ```
 
-## What we expect
+---
 
-1. **State assumptions.** Call out what you would clarify if this were a
-   real project — users, constraints, data shape, success criteria.
-2. **Write a short problem-framing note** before you build. One page is
-   plenty.
-3. **Implement a working slice** — a feature or improvement in this
-   stack (or one you've agreed with us). Scope it to what you can ship
-   with confidence.
-4. **Add automated tests** appropriate to the risk level of your change.
-   We are not looking for 100% coverage; we are looking for tests that
-   would catch the regressions you actually care about.
-5. **Self-QA.** Walk through happy paths, edge cases, and failure modes
-   yourself before handing it over.
-6. **Describe rollout risk and observability.** How would you know — in
-   production — that your change is doing what you expected?
-7. **Use Claude in your workflow** and write a short note about how you
-   used it.
+## Application structure
 
-## Suggested deliverables
+```
+src/app/
+├── accounts/          # Account list page, detail modal, model, service
+├── devices/           # Device model and service
+├── events/            # Event model, service, and map component
+├── exports/           # Export model and service
+├── layout/            # Navbar
+├── users/             # User model and service (with permissions join)
+└── vehicles/          # Vehicle list, map, detail modal, model, service
+```
 
-- **1-page mini brief**: problem statement, assumptions, target user,
-  success metric, scope, trade-offs.
-- **Working code** with clear setup instructions.
-- **Automated tests** plus instructions for running them.
-- **Short README / PR-style summary** explaining decisions, known
-  limitations, and next steps.
-- **Self-QA checklist** listing edge cases and how you validated each.
-- **"How I used Claude" note** (5–10 bullets): what it helped with, what
-  you verified manually, and at least one thing you rejected or
-  corrected.
+---
 
-## Submission
+## Features
 
-- Code repository (branch / fork) **or** a zipped project.
-- Build, lint, and test instructions.
-- A short demo video or screen recording walking us through your
-  change.
-- Problem-framing note and self-QA checklist.
-- AI workflow note.
+### Navigation
 
-## How we evaluate
+A sticky smart navbar sits at the top of every page. It hides on scroll down and reappears immediately on scroll up. Switching between pages automatically scrolls back to the top.
 
-- **Problem framing** — did you understand and bound the problem before
-  coding?
-- **Judgment** — what you chose to fix, what you chose to defer, and
-  what you flagged.
-- **Trade-offs** — clarity about the cost of the path you took versus
-  the alternatives.
-- **Code & test discipline** — naming, scope, commit hygiene, what's
-  worth a test and what isn't.
-- **Ownership** — evidence that you validated your own work and thought
-  about how it behaves in production.
-- **AI use** — thoughtful collaboration with Claude, not blind
-  acceptance.
+| Route | Page |
+|---|---|
+| `/vehicles` | Fleet Vehicles |
+| `/accounts` | Fleet Accounts |
+
+---
+
+### Fleet Vehicles (`/vehicles`)
+
+#### Filters
+
+Five filters rendered above the table. All filtering happens in `VehicleService.getVehicles()` — the component only passes signal values as params. Filters reset pagination to page 1 on change.
+
+| Filter | Behaviour |
+|---|---|
+| Plate | Substring match on keypress |
+| Vehicle | Substring match on make + model on keypress |
+| Year | Dropdown, 1990–2026 |
+| Status | Dropdown — Active, Parked, In Maintenance, Decommissioned |
+| Account | Debounced autocomplete, searches by name or ID; filter applies on selection not on keypress |
+
+Each filter has an individual × clear button. A "Clear all" button appears when any filter is active.
+
+#### Table view
+
+- Alternating column shading with a distinct header background
+- Six sortable columns — click cycles through ascending → descending → off
+- Sort applies to the full filtered collection before pagination, not just the current page
+- Rows with no data sort to the bottom regardless of sort direction
+- Status values shown as colour-coded badges with descriptive tooltips
+- `−` shown for missing Last seen values
+- **Operations** column with an ℹ︎ button that opens the vehicle detail modal
+
+#### Map view
+
+Toggle between Table and Map using the buttons in the page header. The map view:
+
+- Uses Leaflet with OpenStreetMap tiles, defaults to the GTA at zoom 6
+- Fetches only vehicles within the current viewport — bounds are passed as `minLat`, `maxLat`, `minLng`, `maxLng` filter params to the same `getVehicles()` method the table uses
+- Respects all active table filters simultaneously (status, year, account, etc.)
+- Markers are colour-coded by vehicle status (green = active, amber = parked, red = in maintenance, grey = decommissioned)
+- Hovering a marker shows a tooltip with plate, make/model, and account
+- Clicking a marker opens the same vehicle detail modal as the table's ℹ︎ button
+
+#### Pagination
+
+- 20 vehicles per page
+- Google-style numbered pagination with ← / → arrows and ellipsis for large page counts
+- Hidden in map view
+
+#### Vehicle detail modal
+
+Fixed-size modal (1000 × 640 px). Two tabs:
+
+**General**
+- Header: outlined plate badge · make/model/year · VIN · status badge
+- Account section: name, industry, tier, contact, email (fetched and joined from accounts dataset)
+- Current Device section: serial number, firmware version, battery % (green ≥ 50%, amber 20–49%, red < 20%), signal strength, last seen timestamp
+- Last known location: timestamp and coordinates
+
+**Events**
+- Split layout — scrollable event list left, Leaflet map right
+- Events sorted latest → earliest, with a device serial header inserted when the device changes
+- Clicking an event flies the map to that location and enlarges the marker
+- Colour-coded event type badges: GPS Ping, Harsh Brake, Ignition On/Off, Geofence Enter/Exit
+- Speed shown for GPS ping events
+- Events with no location show a "No location" note and are skipped on the map
+
+---
+
+### Fleet Accounts (`/accounts`)
+
+#### Filters
+
+Three filters, same service-layer filtering architecture as vehicles.
+
+| Filter | Behaviour |
+|---|---|
+| Name | Debounced autocomplete, searches by name or ID; filter applies on selection |
+| Industry | Dropdown with human-readable labels (e.g. "Waste Management" not `waste_mgmt`) |
+| Tier | Dropdown — Free, Pro, Enterprise |
+
+#### Table
+
+- Same visual style as vehicles — centre-aligned, alternating column shading, coloured header
+- Industry and tier shown with human-readable labels
+- Tier shown as a colour-coded badge (grey = free, blue = pro, amber = enterprise)
+- `−` for null or empty contact fields
+- 20 accounts per page with the same numbered pagination as vehicles
+- **Operations** column with an ℹ︎ button
+
+#### Account detail modal
+
+Fixed-size modal. Three tabs:
+
+**General**
+- Header: company initial badge · name · tier badge · industry label
+- Details: industry, member since date, address
+- Contact: name and email
+
+**Users**
+- All users whose home account matches, joined with permissions from `permissions.json`
+- Columns: Name, Email, Role (Admin / Dispatcher / Viewer), Permission scope (Full / Limited / None)
+- Role and scope shown as colour-coded badges
+- Users and exports are lazy-loaded together on first tab access
+
+**Exports**
+- All data export jobs for this account
+- Columns: Requested at, Status, Row count, Error message
+- Status shown as colour-coded badge (Queued, Running, Completed, Failed, Stuck)
+- `−` for null fields
+
+---
+
+## Service architecture
+
+All HTTP calls use `shareReplay(1)` — each dataset is fetched once and cached for the lifetime of the app. A single `getVehicles(filters, page?, pageSize?)` handles all vehicle filtering and pagination; omitting page/pageSize returns all matching results (used by the map).
+
+| Service | Responsibility |
+|---|---|
+| `VehicleService` | Vehicles — filtering by all fields including geo-bounds, pagination |
+| `AccountService` | Accounts — filtering, pagination, name/ID autocomplete search |
+| `AccountSearchService` | Autocomplete search used by the vehicle list account filter |
+| `EventService` | Events filtered by vehicle ID |
+| `DeviceService` | Device lookup by vehicle ID; full list for event serial grouping |
+| `UserService` | Users filtered by account ID, joined with permissions |
+| `ExportService` | Exports filtered by account ID |
+
+Components never filter data themselves. They build a `filterParams` computed signal from their state signals and pipe it through `toObservable(filterParams).pipe(switchMap(service.get(...)))`. When any filter signal changes, the pipe automatically cancels the previous call and issues a new one.
+
+---
+
+## Dataset reference
+
+See [`DATASET.md`](DATASET.md) for a full field-by-field reference of all seven JSON files, their relationships, and edge cases worth knowing (null locations, cross-account permissions, stuck exports).
+
+---
+
+## Original brief
+
+See [`ORIGINAL_README.md`](ORIGINAL_README.md) for the original assessment brief and evaluation criteria.

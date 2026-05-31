@@ -263,7 +263,7 @@
     "id": "acc_0027",
     "name": "Stark Industries",
     "industry": "agriculture",
-    "contact_name": "    ",
+    "contact_name": "",
     "contact_email": "ops27@acme.example.com",
     "address": "1712 Main St, Austin",
     "created_at": "2024-08-13T01:11:27Z",

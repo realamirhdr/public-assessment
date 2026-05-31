@@ -35,8 +35,8 @@ export interface Account {
   id: string;
   name: string;
   industry: AccountIndustry;
-  contact_name: string;
-  contact_email: string;
+  contact_name: string | null;
+  contact_email: string | null;
   address: string;
   created_at: string;
   tier: AccountTier;

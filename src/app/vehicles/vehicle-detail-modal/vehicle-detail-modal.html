@@ -28,8 +28,8 @@
             @if (account()) {
               <dt>Industry</dt><dd>{{ account()!.industry | titlecase }}</dd>
               <dt>Tier</dt><dd>{{ account()!.tier | titlecase }}</dd>
-              <dt>Contact</dt><dd>{{ account()!.contact_name }}</dd>
-              <dt>Email</dt><dd>{{ account()!.contact_email }}</dd>
+              <dt>Contact</dt><dd>{{ account()!.contact_name || '-' }}</dd>
+              <dt>Email</dt><dd>{{ account()!.contact_email || '-' }}</dd>
             }
           </dl>
         </div>

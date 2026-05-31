@@ -32,8 +32,8 @@
         <div class="modal__section">
           <h3>Contact</h3>
           <dl>
-            <dt>Name</dt><dd>{{ account().contact_name }}</dd>
-            <dt>Email</dt><dd>{{ account().contact_email }}</dd>
+            <dt>Name</dt><dd>{{ account().contact_name || '-' }}</dd>
+            <dt>Email</dt><dd>{{ account().contact_email || '-' }}</dd>
           </dl>
         </div>
       </div>

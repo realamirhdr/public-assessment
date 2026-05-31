@@ -7,22 +7,14 @@
   <div class="vehicle-list__filters">
     <label class="filter">
       <span>Search</span>
-      <input
-        type="text"
-        placeholder="Search by plate"
-        [ngModel]="query()"
-        (ngModelChange)="query.set($event)"
-      />
+      <input type="text" placeholder="Search by plate" [ngModel]="query()" (ngModelChange)="query.set($event)" />
     </label>
 
     <label class="filter">
       <span>Status</span>
-      <select
-        [ngModel]="selectedStatus()"
-        (ngModelChange)="selectedStatus.set($event)"
-      >
+      <select [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event)">
         @for (status of statuses; track status) {
-          <option [value]="status">{{ status }}</option>
+        <option [value]="status">{{ statusLabel[status] }}</option>
         }
       </select>
     </label>
@@ -41,16 +33,16 @@
     </thead>
     <tbody>
       @for (vehicle of getFilteredVehicles(); track vehicle.id) {
-        <tr>
-          <td>{{ vehicle.plate }}</td>
-          <td>{{ vehicle.make }} {{ vehicle.model }}</td>
-          <td>{{ vehicle.year }}</td>
-          <td>
-            <span class="status status--{{ vehicle.status }}">{{ vehicle.status }}</span>
-          </td>
-          <td>{{ vehicle.account_id }}</td>
-          <td>{{ vehicle.last_known_location?.recorded_at }}</td>
-        </tr>
+      <tr>
+        <td>{{ vehicle.plate }}</td>
+        <td>{{ vehicle.make }} {{ vehicle.model }}</td>
+        <td>{{ vehicle.year }}</td>
+        <td>
+          <span class="status status--{{ vehicle.status }}">{{ statusLabel[vehicle.status] }}</span>
+        </td>
+        <td>{{ vehicle.accountName }}</td>
+        <td>{{ vehicle.last_known_location ? (vehicle.last_known_location.recorded_at | date:'MMM d, y, h:mm a') : '-' }}</td>
+      </tr>
       }
     </tbody>
   </table>

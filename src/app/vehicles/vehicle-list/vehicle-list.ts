@@ -5,6 +5,7 @@ import { Subject, forkJoin } from 'rxjs';
 import { debounceTime, switchMap } from 'rxjs/operators';
 import { VehicleService } from '../vehicle.service';
 import { AccountSearchService } from '../account-search.service';
+import { VehicleMap } from '../vehicle-map/vehicle-map';
 import { Account, Vehicle, VehicleStatus, vehicleStatusLabel, vehicleStatusTooltip } from '../vehicle.model';
 
 type StatusFilter = VehicleStatus | 'all';
@@ -14,7 +15,7 @@ type SortDirection = 'asc' | 'desc';
 @Component({
   selector: 'app-vehicle-list',
   standalone: true,
-  imports: [FormsModule, DatePipe],
+  imports: [FormsModule, DatePipe, VehicleMap],
   templateUrl: './vehicle-list.html',
   styleUrl: './vehicle-list.scss',
 })
@@ -25,6 +26,7 @@ export class VehicleList implements OnInit, OnDestroy {
   readonly page = input(1);
   readonly pageSize = input(20);
 
+  readonly view = signal<'table' | 'map'>('table');
   readonly currentPage = signal(1);
   readonly allRawVehicles = signal<Vehicle[]>([]);
   readonly accountMap = signal<Map<string, string>>(new Map());

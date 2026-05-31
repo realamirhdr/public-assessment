@@ -1,7 +1,17 @@
 <section class="vehicle-list">
   <header class="vehicle-list__header">
     <h1>Fleet Vehicles</h1>
-    <p class="vehicle-list__count">{{ filteredVehicles().length }} of {{ allRawVehicles().length }} vehicles</p>
+    <div class="vehicle-list__header-right">
+      <p class="vehicle-list__count">{{ filteredVehicles().length }} of {{ allRawVehicles().length }} vehicles</p>
+      <div class="view-toggle">
+        <button [class.view-toggle__btn--active]="view() === 'table'" (click)="view.set('table')">
+          &#9776; Table
+        </button>
+        <button [class.view-toggle__btn--active]="view() === 'map'" (click)="view.set('map')">
+          &#9711; Map
+        </button>
+      </div>
+    </div>
   </header>
 
   <div class="vehicle-list__filters">
@@ -90,44 +100,48 @@
     }
   </div>
 
-  <table class="vehicle-list__table">
-    <thead>
-      <tr>
-        <th class="sortable" [class.sorted]="sortColumn() === 'plate'" (click)="toggleSort('plate')">
-          Plate <span class="sort-indicator">{{ sortColumn() === 'plate' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
-        </th>
-        <th class="sortable" [class.sorted]="sortColumn() === 'vehicle'" (click)="toggleSort('vehicle')">
-          Vehicle <span class="sort-indicator">{{ sortColumn() === 'vehicle' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
-        </th>
-        <th class="sortable" [class.sorted]="sortColumn() === 'year'" (click)="toggleSort('year')">
-          Year <span class="sort-indicator">{{ sortColumn() === 'year' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
-        </th>
-        <th class="sortable" [class.sorted]="sortColumn() === 'status'" (click)="toggleSort('status')">
-          Status <span class="sort-indicator">{{ sortColumn() === 'status' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
-        </th>
-        <th class="sortable" [class.sorted]="sortColumn() === 'account'" (click)="toggleSort('account')">
-          Account <span class="sort-indicator">{{ sortColumn() === 'account' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
-        </th>
-        <th class="sortable" [class.sorted]="sortColumn() === 'lastSeen'" (click)="toggleSort('lastSeen')">
-          Last seen <span class="sort-indicator">{{ sortColumn() === 'lastSeen' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (vehicle of vehicles(); track vehicle.id) {
-      <tr>
-        <td>{{ vehicle.plate }}</td>
-        <td>{{ vehicle.make }} {{ vehicle.model }}</td>
-        <td>{{ vehicle.year }}</td>
-        <td>
-          <span class="status status--{{ vehicle.status }}" [title]="statusTooltip[vehicle.status]">{{ statusLabel[vehicle.status] }}</span>
-        </td>
-        <td>{{ vehicle.accountName }}</td>
-        <td>{{ vehicle.last_known_location ? (vehicle.last_known_location.recorded_at | date:'MMM d, y, h:mm a') : '-' }}</td>
-      </tr>
-      }
-    </tbody>
-  </table>
+  @if (view() === 'table') {
+    <table class="vehicle-list__table">
+      <thead>
+        <tr>
+          <th class="sortable" [class.sorted]="sortColumn() === 'plate'" (click)="toggleSort('plate')">
+            Plate <span class="sort-indicator">{{ sortColumn() === 'plate' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+          </th>
+          <th class="sortable" [class.sorted]="sortColumn() === 'vehicle'" (click)="toggleSort('vehicle')">
+            Vehicle <span class="sort-indicator">{{ sortColumn() === 'vehicle' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+          </th>
+          <th class="sortable" [class.sorted]="sortColumn() === 'year'" (click)="toggleSort('year')">
+            Year <span class="sort-indicator">{{ sortColumn() === 'year' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+          </th>
+          <th class="sortable" [class.sorted]="sortColumn() === 'status'" (click)="toggleSort('status')">
+            Status <span class="sort-indicator">{{ sortColumn() === 'status' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+          </th>
+          <th class="sortable" [class.sorted]="sortColumn() === 'account'" (click)="toggleSort('account')">
+            Account <span class="sort-indicator">{{ sortColumn() === 'account' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+          </th>
+          <th class="sortable" [class.sorted]="sortColumn() === 'lastSeen'" (click)="toggleSort('lastSeen')">
+            Last seen <span class="sort-indicator">{{ sortColumn() === 'lastSeen' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (vehicle of vehicles(); track vehicle.id) {
+        <tr>
+          <td>{{ vehicle.plate }}</td>
+          <td>{{ vehicle.make }} {{ vehicle.model }}</td>
+          <td>{{ vehicle.year }}</td>
+          <td>
+            <span class="status status--{{ vehicle.status }}" [title]="statusTooltip[vehicle.status]">{{ statusLabel[vehicle.status] }}</span>
+          </td>
+          <td>{{ vehicle.accountName }}</td>
+          <td>{{ vehicle.last_known_location ? (vehicle.last_known_location.recorded_at | date:'MMM d, y, h:mm a') : '-' }}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <app-vehicle-map />
+  }
 
   <div class="vehicle-list__pagination">
     <button class="pagination__arrow" (click)="prevPage()" [disabled]="currentPage() === 1">&#8592;</button>

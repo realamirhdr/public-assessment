@@ -5,8 +5,9 @@ import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, switchMap } from 'rxjs/operators';
 import { VehicleService, Page } from '../vehicle.service';
-import { AccountSearchService } from '../account-search.service';
+import { AccountService } from '../../accounts/account.service';
 import { VehicleMap } from '../vehicle-map/vehicle-map';
+import { VehicleDetailModal } from '../vehicle-detail-modal/vehicle-detail-modal';
 import { Account, Vehicle, VehicleFilters, VehicleStatus, VehicleViewModel, vehicleStatusLabel, vehicleStatusTooltip } from '../vehicle.model';
 
 type StatusFilter = VehicleStatus | 'all';
@@ -16,13 +17,13 @@ type SortDirection = 'asc' | 'desc';
 @Component({
   selector: 'app-vehicle-list',
   standalone: true,
-  imports: [FormsModule, DatePipe, VehicleMap],
+  imports: [FormsModule, DatePipe, VehicleMap, VehicleDetailModal],
   templateUrl: './vehicle-list.html',
   styleUrl: './vehicle-list.scss',
 })
 export class VehicleList implements OnInit, OnDestroy {
   private vehicleService = inject(VehicleService);
-  private accountSearchService = inject(AccountSearchService);
+  private accountService = inject(AccountService);
 
   readonly page = input(1);
   readonly pageSize = input(20);
@@ -42,6 +43,7 @@ export class VehicleList implements OnInit, OnDestroy {
   readonly showAccountResults = signal(false);
   readonly sortColumn = signal<SortColumn | null>(null);
   readonly sortDirection = signal<SortDirection>('asc');
+  readonly selectedVehicle = signal<VehicleViewModel | null>(null);
 
   private accountSearch$ = new Subject<string>();
 
@@ -135,7 +137,7 @@ export class VehicleList implements OnInit, OnDestroy {
     this.accountSearch$
       .pipe(
         debounceTime(150),
-        switchMap((q) => this.accountSearchService.search(q)),
+        switchMap((q) => this.accountService.search(q)),
         takeUntilDestroyed()
       )
       .subscribe((results) => this.accountResults.set(results));

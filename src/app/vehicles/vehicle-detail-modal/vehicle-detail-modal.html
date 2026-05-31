@@ -1,0 +1,118 @@
+<div class="modal-backdrop" (click)="closed.emit()">
+  <div class="modal" (click)="$event.stopPropagation()">
+
+    <header class="modal__header">
+      <div class="modal__plate-badge">{{ vehicle().plate }}</div>
+      <div class="modal__info">
+        <div class="modal__info-top">
+          <span class="modal__vehicle-name">{{ vehicle().make }} {{ vehicle().model }} &middot; {{ vehicle().year }}</span>
+          <span class="status status--{{ vehicle().status }}" [title]="statusTooltip[vehicle().status]">{{ statusLabel[vehicle().status] }}</span>
+        </div>
+        <span class="modal__vin">{{ vehicle().vin }}</span>
+      </div>
+      <button class="modal__close" (click)="closed.emit()">&#x2715;</button>
+    </header>
+
+    <nav class="modal__tabs">
+      <button class="modal__tab" [class.modal__tab--active]="activeTab() === 'general'" (click)="activeTab.set('general')">General</button>
+<button class="modal__tab" [class.modal__tab--active]="activeTab() === 'events'" (click)="activeTab.set('events')">Events</button>
+    </nav>
+
+    @if (activeTab() === 'general') {
+      <div class="modal__body">
+
+        <div class="modal__section">
+          <h3>Account</h3>
+          <dl>
+            <dt>Name</dt><dd>{{ vehicle().accountName }}</dd>
+            @if (account()) {
+              <dt>Industry</dt><dd>{{ account()!.industry | titlecase }}</dd>
+              <dt>Tier</dt><dd>{{ account()!.tier | titlecase }}</dd>
+              <dt>Contact</dt><dd>{{ account()!.contact_name }}</dd>
+              <dt>Email</dt><dd>{{ account()!.contact_email }}</dd>
+            }
+          </dl>
+        </div>
+
+        <div class="modal__section">
+          <h3>Current Device</h3>
+          @if (currentDevice()) {
+            <dl>
+              <dt>Serial</dt><dd class="modal__vin">{{ currentDevice()!.serial }}</dd>
+              <dt>Firmware</dt><dd>{{ currentDevice()!.firmware }}</dd>
+              <dt>Battery</dt>
+              <dd>
+                <span class="battery"
+                  [class.battery--high]="currentDevice()!.battery_pct >= 50"
+                  [class.battery--medium]="currentDevice()!.battery_pct >= 20 && currentDevice()!.battery_pct < 50"
+                  [class.battery--low]="currentDevice()!.battery_pct < 20">
+                  {{ currentDevice()!.battery_pct }}%
+                </span>
+              </dd>
+              <dt>Signal strength</dt><dd>{{ currentDevice()!.signal_strength }}</dd>
+              <dt>Last seen</dt><dd>{{ currentDevice()!.last_seen_at | date:'MMM d, y, h:mm a' }}</dd>
+            </dl>
+          } @else {
+            <p class="modal__no-data">No device data available</p>
+          }
+        </div>
+
+        <div class="modal__section">
+          <h3>Last known location</h3>
+          <dl>
+            @if (vehicle().last_known_location) {
+              <dt>Time</dt>
+              <dd>{{ vehicle().last_known_location!.recorded_at | date:'MMM d, y, h:mm a' }}</dd>
+              <dt>Coordinates</dt>
+              <dd>{{ vehicle().last_known_location!.lat | number:'1.4-4' }}, {{ vehicle().last_known_location!.lng | number:'1.4-4' }}</dd>
+            } @else {
+              <dt></dt><dd class="modal__no-data">No location data available</dd>
+            }
+          </dl>
+        </div>
+
+      </div>
+    }
+
+    @if (activeTab() === 'events') {
+      @if (!eventsLoaded()) {
+        <div class="modal__body"><p class="modal__no-data">Loading events…</p></div>
+      } @else if (sortedEvents().length === 0) {
+        <div class="modal__body"><p class="modal__no-data">No events found for this vehicle.</p></div>
+      } @else {
+        <div class="modal__events-layout">
+          <ul class="event-log">
+            @for (item of eventItems(); track $index) {
+              @if (item.kind === 'header') {
+                <li class="event-log__group-header">
+                  <span class="event-log__serial">{{ item.serial }}</span>
+                </li>
+              } @else {
+                <li
+                  class="event-log__item"
+                  [class.event-log__item--selected]="selectedEvent()?.id === item.event.id"
+                  (click)="selectedEvent.set(item.event)"
+                >
+                  <span class="event-badge event-badge--{{ item.event.type }}">{{ eventLabel[item.event.type] }}</span>
+                  <div class="event-log__meta">
+                    <span class="event-log__time">{{ item.event.timestamp | date:'MMM d, y, h:mm a' }}</span>
+                    @if (item.event.payload['speed_mph'] !== undefined) {
+                      <span class="event-log__detail">{{ item.event.payload['speed_mph'] }} mph</span>
+                    }
+                    @if (!item.event.location?.lat) {
+                      <span class="event-log__detail modal__no-data">No location</span>
+                    }
+                  </div>
+                </li>
+              }
+            }
+          </ul>
+          <div class="modal__map-pane">
+            <app-event-map [events]="sortedEvents()" [selectedEvent]="selectedEvent()" />
+          </div>
+        </div>
+      }
+    }
+
+  </div>
+</div>

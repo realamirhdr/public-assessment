@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnDestroy, ElementRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, ElementRef, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { filter, switchMap } from 'rxjs/operators';
 import * as L from 'leaflet';
@@ -22,6 +22,7 @@ export class VehicleMap implements AfterViewInit, OnDestroy {
   private vehicleService = inject(VehicleService);
 
   readonly filters = input<VehicleFilters>({});
+  readonly vehicleSelected = output<VehicleViewModel>();
 
   private mapEl = viewChild.required<ElementRef<HTMLDivElement>>('mapEl');
   private map: L.Map | null = null;
@@ -98,12 +99,11 @@ export class VehicleMap implements AfterViewInit, OnDestroy {
         fillColor: STATUS_COLORS[v.status],
         fillOpacity: 0.9,
       })
-        .bindPopup(
-          `<strong>${v.plate}</strong><br>
-           ${v.make} ${v.model} (${v.year})<br>
-           ${v.accountName}<br>
-           <em>${v.status.replace('_', ' ')}</em>`
+        .bindTooltip(
+          `<strong>${v.plate}</strong><br>${v.make} ${v.model} (${v.year})<br>${v.accountName}`,
+          { sticky: true }
         )
+        .on('click', () => this.vehicleSelected.emit(v))
         .addTo(this.markers);
     }
   }

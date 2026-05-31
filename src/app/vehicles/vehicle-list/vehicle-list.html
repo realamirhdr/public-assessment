@@ -123,6 +123,7 @@
           Last seen <span class="sort-indicator">{{ sortColumn() === 'lastSeen' ? (sortDirection() === 'asc' ? '↑' :
             '↓') : '↕' }}</span>
         </th>
+        <th>Operations</th>
       </tr>
     </thead>
     <tbody>
@@ -138,12 +139,15 @@
         <td>{{ vehicle.accountName }}</td>
         <td>{{ vehicle.last_known_location ? (vehicle.last_known_location.recorded_at | date:'MMM d, y, h:mm a') : '-'
           }}</td>
+        <td>
+          <button class="op-btn" (click)="selectedVehicle.set(vehicle)" title="View details">&#x2139;</button>
+        </td>
       </tr>
       }
     </tbody>
   </table>
   } @else {
-  <app-vehicle-map [filters]="activeFilters()" />
+  <app-vehicle-map [filters]="activeFilters()" (vehicleSelected)="selectedVehicle.set($event)" />
   }
 
   @if (view() === 'table') {
@@ -161,5 +165,12 @@
 
     <button class="pagination__arrow" (click)="nextPage()" [disabled]="currentPage() === totalPages()">&#8594;</button>
   </div>
+  }
+
+  @if (selectedVehicle()) {
+    <app-vehicle-detail-modal
+      [vehicle]="selectedVehicle()!"
+      (closed)="selectedVehicle.set(null)"
+    />
   }
 </section>

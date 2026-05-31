@@ -2,7 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { delay, map, shareReplay } from 'rxjs/operators';
-import { Account, Vehicle, VehicleFilters } from './vehicle.model';
+import { Account } from '../accounts/account.model';
+import { Vehicle, VehicleFilters } from './vehicle.model';
 
 export interface Page<T> {
   items: T[];

@@ -46,4 +46,18 @@
       }
     </tbody>
   </table>
+
+  <div class="vehicle-list__pagination">
+    <button class="pagination__arrow" (click)="prevPage()" [disabled]="currentPage() === 1">&#8592;</button>
+
+    @for (p of getPageNumbers(); track $index) {
+      @if (p === null) {
+        <span class="pagination__ellipsis">…</span>
+      } @else {
+        <button class="pagination__page" [class.pagination__page--active]="p === currentPage()" (click)="loadPage(p)">{{ p }}</button>
+      }
+    }
+
+    <button class="pagination__arrow" (click)="nextPage()" [disabled]="currentPage() === totalPages()">&#8594;</button>
+  </div>
 </section>

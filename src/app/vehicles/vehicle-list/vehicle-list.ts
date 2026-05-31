@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, input, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -17,6 +17,12 @@ type StatusFilter = VehicleStatus | 'all';
 export class VehicleList implements OnInit {
   private vehicleService = inject(VehicleService);
 
+  readonly page = input(1);
+  readonly pageSize = input(20);
+
+  readonly currentPage = signal(1);
+  readonly totalPages = signal(1);
+
   readonly vehicles = signal<VehicleViewModel[]>([]);
   readonly query = signal('');
   readonly selectedStatus = signal<StatusFilter>('all');
@@ -26,18 +32,56 @@ export class VehicleList implements OnInit {
   readonly statusLabel: Record<StatusFilter, string> = { all: 'All', ...vehicleStatusLabel };
 
   ngOnInit(): void {
+    this.currentPage.set(this.page());
+    this.loadPage(this.currentPage());
+  }
+
+  loadPage(page: number): void {
     forkJoin({
-      vehicles: this.vehicleService.getVehicles(),
+      vehicles: this.vehicleService.getVehicles(page, this.pageSize()),
       accounts: this.vehicleService.getAccounts(),
     }).subscribe(({ vehicles, accounts }) => {
       const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
+      this.currentPage.set(vehicles.page);
+      this.totalPages.set(vehicles.totalPages);
       this.vehicles.set(
-        vehicles.map(({ account_id, device_id, ...rest }) => ({
+        vehicles.items.map(({ account_id, device_id, ...rest }) => ({
           ...rest,
           accountName: accountMap.get(account_id) ?? account_id,
         }))
       );
     });
+  }
+
+  prevPage(): void {
+    if (this.currentPage() > 1) this.loadPage(this.currentPage() - 1);
+  }
+
+  nextPage(): void {
+    if (this.currentPage() < this.totalPages()) this.loadPage(this.currentPage() + 1);
+  }
+
+  getPageNumbers(): (number | null)[] {
+    const total = this.totalPages();
+    const current = this.currentPage();
+
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    const pages: (number | null)[] = [1];
+
+    if (current > 3) pages.push(null);
+
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
+      pages.push(i);
+    }
+
+    if (current < total - 2) pages.push(null);
+
+    pages.push(total);
+
+    return pages;
   }
 
   getFilteredVehicles(): VehicleViewModel[] {

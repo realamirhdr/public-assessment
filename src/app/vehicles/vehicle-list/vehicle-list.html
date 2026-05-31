@@ -1,44 +1,126 @@
 <section class="vehicle-list">
   <header class="vehicle-list__header">
     <h1>Fleet Vehicles</h1>
-    <p class="vehicle-list__count">{{ getFilteredVehicles().length }} of {{ vehicles().length }} vehicles</p>
+    <p class="vehicle-list__count">{{ filteredVehicles().length }} of {{ allRawVehicles().length }} vehicles</p>
   </header>
 
   <div class="vehicle-list__filters">
-    <label class="filter">
-      <span>Search</span>
-      <input type="text" placeholder="Search by plate" [ngModel]="query()" (ngModelChange)="query.set($event)" />
-    </label>
-
-    <label class="filter">
-      <span>Status</span>
-      <select [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event)">
-        @for (status of statuses; track status) {
-        <option [value]="status">{{ statusLabel[status] }}</option>
+    <div class="filter">
+      <span>Plate</span>
+      <div class="filter__input-wrap">
+        <input type="text" placeholder="Filter" [ngModel]="query()" (ngModelChange)="setQuery($event)" />
+        @if (query()) {
+          <button class="filter__clear" (click)="setQuery('')">&#x2715;</button>
         }
-      </select>
-    </label>
+      </div>
+    </div>
+
+    <div class="filter filter--grow">
+      <span>Vehicle</span>
+      <div class="filter__input-wrap">
+        <input type="text" placeholder="Filter" [ngModel]="queryName()" (ngModelChange)="setQueryName($event)" />
+        @if (queryName()) {
+          <button class="filter__clear" (click)="setQueryName('')">&#x2715;</button>
+        }
+      </div>
+    </div>
+
+    <div class="filter filter--narrow">
+      <span>Year</span>
+      <div class="filter__input-wrap">
+        <select [ngModel]="selectedYear()" (ngModelChange)="setYear($event)">
+          <option value="">All</option>
+          @for (year of availableYears(); track year) {
+            <option [value]="year">{{ year }}</option>
+          }
+        </select>
+        @if (selectedYear() !== '') {
+          <button class="filter__clear" (click)="setYear('')">&#x2715;</button>
+        }
+      </div>
+    </div>
+
+    <div class="filter">
+      <span>Status</span>
+      <div class="filter__input-wrap">
+        <select [ngModel]="selectedStatus()" (ngModelChange)="setStatus($event)">
+          @for (status of statuses; track status) {
+            <option [value]="status">{{ statusLabel[status] }}</option>
+          }
+        </select>
+        @if (selectedStatus() !== 'all') {
+          <button class="filter__clear" (click)="setStatus('all')">&#x2715;</button>
+        }
+      </div>
+    </div>
+
+    <div class="filter filter--grow">
+      <span>Account</span>
+      <div class="autocomplete">
+        <div class="autocomplete__input-wrap">
+          <input
+            type="text"
+            placeholder="Search by name or ID"
+            [value]="accountInputValue()"
+            (input)="onAccountInput($event)"
+            (focus)="showAccountResults.set(true)"
+            (blur)="showAccountResults.set(false)"
+          />
+          @if (accountInputValue()) {
+            <button class="autocomplete__clear" (mousedown)="clearAccount()">&#x2715;</button>
+          }
+        </div>
+        @if (showAccountResults() && accountResults().length > 0) {
+          <ul class="autocomplete__results">
+            @for (account of accountResults(); track account.id) {
+              <li (mousedown)="selectAccount(account)">
+                <span class="autocomplete__name">{{ account.name }}</span>
+                <span class="autocomplete__id">{{ account.id }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+
+    @if (hasActiveFilters()) {
+      <div class="filter filter--action">
+        <button class="filter__clear-all" (click)="clearAll()">Clear all</button>
+      </div>
+    }
   </div>
 
   <table class="vehicle-list__table">
     <thead>
       <tr>
-        <th>Plate</th>
-        <th>Vehicle</th>
-        <th>Year</th>
-        <th>Status</th>
-        <th>Account</th>
-        <th>Last seen</th>
+        <th class="sortable" [class.sorted]="sortColumn() === 'plate'" (click)="toggleSort('plate')">
+          Plate <span class="sort-indicator">{{ sortColumn() === 'plate' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+        </th>
+        <th class="sortable" [class.sorted]="sortColumn() === 'vehicle'" (click)="toggleSort('vehicle')">
+          Vehicle <span class="sort-indicator">{{ sortColumn() === 'vehicle' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+        </th>
+        <th class="sortable" [class.sorted]="sortColumn() === 'year'" (click)="toggleSort('year')">
+          Year <span class="sort-indicator">{{ sortColumn() === 'year' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+        </th>
+        <th class="sortable" [class.sorted]="sortColumn() === 'status'" (click)="toggleSort('status')">
+          Status <span class="sort-indicator">{{ sortColumn() === 'status' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+        </th>
+        <th class="sortable" [class.sorted]="sortColumn() === 'account'" (click)="toggleSort('account')">
+          Account <span class="sort-indicator">{{ sortColumn() === 'account' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+        </th>
+        <th class="sortable" [class.sorted]="sortColumn() === 'lastSeen'" (click)="toggleSort('lastSeen')">
+          Last seen <span class="sort-indicator">{{ sortColumn() === 'lastSeen' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+        </th>
       </tr>
     </thead>
     <tbody>
-      @for (vehicle of getFilteredVehicles(); track vehicle.id) {
+      @for (vehicle of vehicles(); track vehicle.id) {
       <tr>
         <td>{{ vehicle.plate }}</td>
         <td>{{ vehicle.make }} {{ vehicle.model }}</td>
         <td>{{ vehicle.year }}</td>
         <td>
-          <span class="status status--{{ vehicle.status }}">{{ statusLabel[vehicle.status] }}</span>
+          <span class="status status--{{ vehicle.status }}" [title]="statusTooltip[vehicle.status]">{{ statusLabel[vehicle.status] }}</span>
         </td>
         <td>{{ vehicle.accountName }}</td>
         <td>{{ vehicle.last_known_location ? (vehicle.last_known_location.recorded_at | date:'MMM d, y, h:mm a') : '-' }}</td>

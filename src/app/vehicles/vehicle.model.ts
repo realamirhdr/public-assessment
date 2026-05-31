@@ -7,6 +7,13 @@ export const vehicleStatusLabel: Record<VehicleStatus, string> = {
   decommissioned: 'Decommissioned',
 };
 
+export const vehicleStatusTooltip: Record<VehicleStatus, string> = {
+  active: 'Vehicle is currently on the road and reporting live data.',
+  parked: 'Vehicle is stationary and not in active use.',
+  in_maintenance: 'Vehicle is undergoing scheduled or unscheduled maintenance.',
+  decommissioned: 'Vehicle has been retired from the fleet and is no longer operational.',
+};
+
 export type AccountTier = 'free' | 'pro' | 'enterprise';
 
 export type AccountIndustry =

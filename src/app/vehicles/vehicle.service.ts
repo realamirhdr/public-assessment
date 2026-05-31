@@ -39,4 +39,5 @@ export class VehicleService {
   getAccounts(): Observable<Account[]> {
     return this.http.get<Account[]>('/dataset/accounts.json');
   }
+
 }

@@ -1,12 +1,13 @@
 import { Component, OnDestroy, OnInit, computed, inject, input, signal } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, forkJoin } from 'rxjs';
+import { Subject } from 'rxjs';
 import { debounceTime, switchMap } from 'rxjs/operators';
-import { VehicleService } from '../vehicle.service';
+import { VehicleService, Page } from '../vehicle.service';
 import { AccountSearchService } from '../account-search.service';
 import { VehicleMap } from '../vehicle-map/vehicle-map';
-import { Account, Vehicle, VehicleStatus, vehicleStatusLabel, vehicleStatusTooltip } from '../vehicle.model';
+import { Account, Vehicle, VehicleFilters, VehicleStatus, VehicleViewModel, vehicleStatusLabel, vehicleStatusTooltip } from '../vehicle.model';
 
 type StatusFilter = VehicleStatus | 'all';
 type SortColumn = 'plate' | 'vehicle' | 'year' | 'status' | 'account' | 'lastSeen';
@@ -28,7 +29,8 @@ export class VehicleList implements OnInit, OnDestroy {
 
   readonly view = signal<'table' | 'map'>('table');
   readonly currentPage = signal(1);
-  readonly allRawVehicles = signal<Vehicle[]>([]);
+  readonly pageResult = signal<Page<Vehicle> | null>(null);
+  readonly allYears = Array.from({ length: 2026 - 1990 + 1 }, (_, i) => 2026 - i);
   readonly accountMap = signal<Map<string, string>>(new Map());
   readonly query = signal('');
   readonly queryName = signal('');
@@ -43,10 +45,6 @@ export class VehicleList implements OnInit, OnDestroy {
 
   private accountSearch$ = new Subject<string>();
 
-  readonly availableYears = computed(() =>
-    [...new Set(this.allRawVehicles().map((v) => v.year))].sort((a, b) => b - a)
-  );
-
   readonly statuses: StatusFilter[] = ['all', 'active', 'parked', 'in_maintenance', 'decommissioned'];
   readonly statusLabel: Record<StatusFilter, string> = { all: 'All', ...vehicleStatusLabel };
   readonly statusTooltip = vehicleStatusTooltip;
@@ -59,32 +57,40 @@ export class VehicleList implements OnInit, OnDestroy {
     this.selectedAccountId() !== ''
   );
 
-  readonly filteredVehicles = computed(() => {
-    const q = this.query().toLowerCase();
-    const qName = this.queryName().toLowerCase();
-    const status = this.selectedStatus();
-    const year = this.selectedYear();
+  readonly activeFilters = computed(() => ({
+    plate: this.query() || undefined,
+    name: this.queryName() || undefined,
+    status: this.selectedStatus() !== 'all' ? this.selectedStatus() as VehicleStatus : undefined,
+    year: this.selectedYear() !== '' ? this.selectedYear() as number : undefined,
+    accountId: this.selectedAccountId() || undefined,
+  }));
+
+  private readonly serviceParams = computed(() => ({
+    filters: {
+      plate: this.query() || undefined,
+      name: this.queryName() || undefined,
+      status: this.selectedStatus() !== 'all' ? this.selectedStatus() as VehicleStatus : undefined,
+      year: this.selectedYear() !== '' ? this.selectedYear() as number : undefined,
+      accountId: this.selectedAccountId() || undefined,
+    } satisfies VehicleFilters,
+    page: this.currentPage(),
+    pageSize: this.pageSize(),
+  }));
+
+  readonly filteredVehicles = computed((): VehicleViewModel[] => {
+    const items = this.pageResult()?.items ?? [];
     const map = this.accountMap();
     const col = this.sortColumn();
     const dir = this.sortDirection();
 
-    const results = this.allRawVehicles()
-      .filter((v) => !this.selectedAccountId() || v.account_id === this.selectedAccountId())
-      .map(({ account_id, device_id, ...rest }) => ({
-        ...rest,
-        accountName: map.get(account_id) ?? account_id,
-      }))
-      .filter((v) => {
-        const matchesPlate = q === '' || v.plate.toLowerCase().includes(q);
-        const matchesName = qName === '' || `${v.make} ${v.model}`.toLowerCase().includes(qName);
-        const matchesStatus = status === 'all' || v.status === status;
-        const matchesYear = year === '' || v.year === year;
-        return matchesPlate && matchesName && matchesStatus && matchesYear;
-      });
+    const results = items.map(({ account_id, device_id, ...rest }) => ({
+      ...rest,
+      accountName: map.get(account_id) ?? account_id,
+    }));
 
     if (!col) return results;
 
-    const getValue = (v: typeof results[0]): string | number => {
+    const getValue = (v: VehicleViewModel): string | number => {
       switch (col) {
         case 'plate':    return v.plate;
         case 'vehicle':  return `${v.make} ${v.model}`;
@@ -108,30 +114,38 @@ export class VehicleList implements OnInit, OnDestroy {
     });
   });
 
-  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.filteredVehicles().length / this.pageSize())));
+  readonly totalPages = computed(() => this.pageResult()?.totalPages ?? 1);
+  readonly totalVehicles = computed(() => this.pageResult()?.total ?? 0);
 
-  readonly vehicles = computed(() => {
-    const page = this.currentPage();
-    const size = this.pageSize();
-    return this.filteredVehicles().slice((page - 1) * size, page * size);
-  });
+  readonly vehicles = computed(() => this.filteredVehicles());
 
-  ngOnInit(): void {
-    this.currentPage.set(this.page());
-    forkJoin({
-      vehicles: this.vehicleService.getAllVehicles(),
-      accounts: this.vehicleService.getAccounts(),
-    }).subscribe(({ vehicles, accounts }) => {
-      this.allRawVehicles.set(vehicles);
-      this.accountMap.set(new Map(accounts.map((a) => [a.id, a.name])));
-    });
+  constructor() {
+    toObservable(this.serviceParams)
+      .pipe(
+        switchMap(({ filters, page, pageSize }) =>
+          this.vehicleService.getVehicles(filters, page, pageSize)
+        ),
+        takeUntilDestroyed()
+      )
+      .subscribe((result) => {
+        return this.pageResult.set(result);
+      });
+
 
     this.accountSearch$
       .pipe(
         debounceTime(150),
-        switchMap((q) => this.accountSearchService.search(q))
+        switchMap((q) => this.accountSearchService.search(q)),
+        takeUntilDestroyed()
       )
       .subscribe((results) => this.accountResults.set(results));
+  }
+
+  ngOnInit(): void {
+    this.vehicleService.getAccounts().subscribe((accounts) => {
+      this.accountMap.set(new Map(accounts.map((a) => [a.id, a.name])));
+    });
+
   }
 
   ngOnDestroy(): void {
@@ -142,9 +156,8 @@ export class VehicleList implements OnInit, OnDestroy {
     const q = (event.target as HTMLInputElement).value;
     this.accountInputValue.set(q);
     this.selectedAccountId.set('');
-    this.currentPage.set(1);
-    this.showAccountResults.set(true);
     this.accountSearch$.next(q);
+    this.showAccountResults.set(true);
   }
 
   selectAccount(account: Account): void {
@@ -152,7 +165,6 @@ export class VehicleList implements OnInit, OnDestroy {
     this.accountInputValue.set(account.name);
     this.showAccountResults.set(false);
     this.accountResults.set([]);
-    this.currentPage.set(1);
   }
 
   clearAccount(): void {
@@ -160,7 +172,6 @@ export class VehicleList implements OnInit, OnDestroy {
     this.accountInputValue.set('');
     this.accountResults.set([]);
     this.showAccountResults.set(false);
-    this.currentPage.set(1);
   }
 
   clearAll(): void {
@@ -183,58 +194,24 @@ export class VehicleList implements OnInit, OnDestroy {
     this.currentPage.set(1);
   }
 
-  setQuery(q: string): void {
-    this.query.set(q);
-    this.currentPage.set(1);
-  }
+  setQuery(q: string): void { this.query.set(q); this.currentPage.set(1); }
+  setQueryName(q: string): void { this.queryName.set(q); this.currentPage.set(1); }
+  setYear(y: string): void { this.selectedYear.set(y === '' ? '' : +y); this.currentPage.set(1); }
+  setStatus(s: StatusFilter): void { this.selectedStatus.set(s); this.currentPage.set(1); }
 
-  setQueryName(q: string): void {
-    this.queryName.set(q);
-    this.currentPage.set(1);
-  }
-
-  setYear(y: string): void {
-    this.selectedYear.set(y === '' ? '' : +y);
-    this.currentPage.set(1);
-  }
-
-  setStatus(s: StatusFilter): void {
-    this.selectedStatus.set(s);
-    this.currentPage.set(1);
-  }
-
-  loadPage(page: number): void {
-    this.currentPage.set(page);
-  }
-
-  prevPage(): void {
-    if (this.currentPage() > 1) this.currentPage.set(this.currentPage() - 1);
-  }
-
-  nextPage(): void {
-    if (this.currentPage() < this.totalPages()) this.currentPage.set(this.currentPage() + 1);
-  }
+  loadPage(page: number): void { this.currentPage.set(page); }
+  prevPage(): void { if (this.currentPage() > 1) this.currentPage.set(this.currentPage() - 1); }
+  nextPage(): void { if (this.currentPage() < this.totalPages()) this.currentPage.set(this.currentPage() + 1); }
 
   getPageNumbers(): (number | null)[] {
     const total = this.totalPages();
     const current = this.currentPage();
-
-    if (total <= 7) {
-      return Array.from({ length: total }, (_, i) => i + 1);
-    }
-
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
     const pages: (number | null)[] = [1];
-
     if (current > 3) pages.push(null);
-
-    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
-      pages.push(i);
-    }
-
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
     if (current < total - 2) pages.push(null);
-
     pages.push(total);
-
     return pages;
   }
 }

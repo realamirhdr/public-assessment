@@ -55,6 +55,18 @@ export interface Vehicle {
   last_known_location: VehicleLocation | null;
 }
 
+export interface VehicleFilters {
+  plate?: string;
+  name?: string;
+  status?: VehicleStatus;
+  year?: number;
+  accountId?: string;
+  minLat?: number;
+  maxLat?: number;
+  minLng?: number;
+  maxLng?: number;
+}
+
 export interface VehicleViewModel {
   id: string;
   accountName: string;

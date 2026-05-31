@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { delay, map, shareReplay } from 'rxjs/operators';
-import { Account, Vehicle } from './vehicle.model';
+import { Account, Vehicle, VehicleFilters } from './vehicle.model';
 
 export interface Page<T> {
   items: T[];
@@ -20,16 +20,27 @@ export class VehicleService {
     .get<Vehicle[]>('/dataset/vehicles.json')
     .pipe(shareReplay(1));
 
-  getAllVehicles(): Observable<Vehicle[]> {
-    return this.vehicles$.pipe(delay(300));
-  }
-
-  getVehicles(page = 1, pageSize = 20): Observable<Page<Vehicle>> {
+  getVehicles(filters: VehicleFilters = {}, page?: number, pageSize?: number): Observable<Page<Vehicle>> {
     return this.vehicles$.pipe(
       map((all) => {
-        const total = all.length;
-        const totalPages = Math.ceil(total / pageSize);
-        const items = all.slice((page - 1) * pageSize, page * pageSize);
+        const filtered = all.filter((v) => {
+          if (filters.plate && !v.plate.toLowerCase().includes(filters.plate.toLowerCase())) return false;
+          if (filters.name && !`${v.make} ${v.model}`.toLowerCase().includes(filters.name.toLowerCase())) return false;
+          if (filters.status && v.status !== filters.status) return false;
+          if (filters.year && v.year !== filters.year) return false;
+          if (filters.accountId && v.account_id !== filters.accountId) return false;
+          if (filters.minLat !== undefined && (!v.last_known_location || v.last_known_location.lat < filters.minLat)) return false;
+          if (filters.maxLat !== undefined && (!v.last_known_location || v.last_known_location.lat > filters.maxLat)) return false;
+          if (filters.minLng !== undefined && (!v.last_known_location || v.last_known_location.lng < filters.minLng)) return false;
+          if (filters.maxLng !== undefined && (!v.last_known_location || v.last_known_location.lng > filters.maxLng)) return false;
+          return true;
+        });
+        const total = filtered.length;
+        if (page === undefined || pageSize === undefined) {
+          return { items: filtered, total, page: 1, pageSize: total, totalPages: 1 };
+        }
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const items = filtered.slice((page - 1) * pageSize, page * pageSize);
         return { items, total, page, pageSize, totalPages };
       }),
       delay(300)
@@ -39,5 +50,8 @@ export class VehicleService {
   getAccounts(): Observable<Account[]> {
     return this.http.get<Account[]>('/dataset/accounts.json');
   }
+
+
+
 
 }

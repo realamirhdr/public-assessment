@@ -1,0 +1,219 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  width: 560px;
+  height: 520px;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.75rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  &__initial {
+    flex-shrink: 0;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 8px;
+    background: #e2e8f0;
+    color: #374151;
+    font-size: 1.2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+  }
+
+  &__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  &__info-top {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  &__name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  &__industry {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9ca3af;
+    font-size: 1rem;
+    padding: 0.25rem;
+    &:hover { color: #374151; }
+  }
+
+  &__tabs {
+    display: flex;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0 1.75rem;
+  }
+
+  &__tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    cursor: pointer;
+    margin-bottom: -1px;
+
+    &:hover { color: #374151; }
+
+    &--active {
+      color: #1d4ed8;
+      border-bottom-color: #1d4ed8;
+      font-weight: 600;
+    }
+  }
+
+  &__body {
+    padding: 1.25rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+
+    th, td {
+      text-align: left;
+      padding: 0.45rem 0.6rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    th {
+      font-weight: 600;
+      color: #374151;
+      background: #f1f5f9;
+    }
+
+    tbody tr:hover td { background: #f9fafb; }
+  }
+
+  &__no-data {
+    color: #9ca3af;
+    font-style: italic;
+    margin: 0;
+  }
+
+  &__error {
+    color: #dc2626;
+    font-size: 0.8rem;
+  }
+
+  &__section {
+    h3 {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9ca3af;
+      margin: 0 0 0.6rem;
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      row-gap: 0.4rem;
+      margin: 0;
+    }
+
+    dt { font-size: 0.85rem; color: #6b7280; }
+    dd { font-size: 0.875rem; color: #111827; margin: 0; }
+  }
+}
+
+.role {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: capitalize;
+
+  &--admin      { background: #fee2e2; color: #991b1b; }
+  &--dispatcher { background: #dbeafe; color: #1d4ed8; }
+  &--viewer     { background: #f3f4f6; color: #4b5563; }
+}
+
+.scope {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: capitalize;
+
+  &--full    { background: #dcfce7; color: #166534; }
+  &--limited { background: #fef3c7; color: #92400e; }
+  &--none    { background: #f3f4f6; color: #6b7280; }
+}
+
+.export-status {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: capitalize;
+
+  &--completed { background: #dcfce7; color: #166534; }
+  &--queued    { background: #dbeafe; color: #1d4ed8; }
+  &--running   { background: #fef3c7; color: #92400e; }
+  &--failed    { background: #fee2e2; color: #991b1b; }
+  &--stuck     { background: #f3e8ff; color: #7c3aed; }
+}
+
+.tier {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  &--free       { background: #f3f4f6; color: #4b5563; }
+  &--pro        { background: #dbeafe; color: #1d4ed8; }
+  &--enterprise { background: #fef3c7; color: #92400e; }
+}

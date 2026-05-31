@@ -1,0 +1,105 @@
+<div class="modal-backdrop" (click)="closed.emit()">
+  <div class="modal" (click)="$event.stopPropagation()">
+
+    <header class="modal__header">
+      <div class="modal__initial">{{ account().name.charAt(0) }}</div>
+      <div class="modal__info">
+        <div class="modal__info-top">
+          <span class="modal__name">{{ account().name }}</span>
+          <span class="tier tier--{{ account().tier }}">{{ tierLabel[account().tier] }}</span>
+        </div>
+        <span class="modal__industry">{{ industryLabel[account().industry] }}</span>
+      </div>
+      <button class="modal__close" (click)="closed.emit()">&#x2715;</button>
+    </header>
+
+    <nav class="modal__tabs">
+      <button class="modal__tab" [class.modal__tab--active]="activeTab() === 'general'" (click)="activeTab.set('general')">General</button>
+      <button class="modal__tab" [class.modal__tab--active]="activeTab() === 'users'" (click)="activeTab.set('users')">Users</button>
+      <button class="modal__tab" [class.modal__tab--active]="activeTab() === 'exports'" (click)="activeTab.set('exports')">Exports</button>
+    </nav>
+
+    @if (activeTab() === 'general') {
+      <div class="modal__body">
+        <div class="modal__section">
+          <h3>Details</h3>
+          <dl>
+            <dt>Industry</dt><dd>{{ industryLabel[account().industry] }}</dd>
+            <dt>Member since</dt><dd>{{ account().created_at | date:'MMM d, y' }}</dd>
+            <dt>Address</dt><dd>{{ account().address }}</dd>
+          </dl>
+        </div>
+        <div class="modal__section">
+          <h3>Contact</h3>
+          <dl>
+            <dt>Name</dt><dd>{{ account().contact_name }}</dd>
+            <dt>Email</dt><dd>{{ account().contact_email }}</dd>
+          </dl>
+        </div>
+      </div>
+    }
+
+    @if (activeTab() === 'users') {
+      <div class="modal__body">
+        @if (!dataLoaded()) {
+          <p class="modal__no-data">Loading…</p>
+        } @else if (users().length === 0) {
+          <p class="modal__no-data">No users for this account.</p>
+        } @else {
+          <table class="modal__table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Permission</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (user of users(); track user.id) {
+                <tr>
+                  <td>{{ user.name }}</td>
+                  <td>{{ user.email }}</td>
+                  <td><span class="role role--{{ user.role }}">{{ user.role }}</span></td>
+                  <td><span class="scope scope--{{ user.scope }}">{{ user.scope ?? '—' }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    }
+
+    @if (activeTab() === 'exports') {
+      <div class="modal__body">
+        @if (!dataLoaded()) {
+          <p class="modal__no-data">Loading…</p>
+        } @else if (exports().length === 0) {
+          <p class="modal__no-data">No exports for this account.</p>
+        } @else {
+          <table class="modal__table">
+            <thead>
+              <tr>
+                <th>Requested at</th>
+                <th>Status</th>
+                <th>Rows</th>
+                <th>Error</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (exp of exports(); track exp.id) {
+                <tr>
+                  <td>{{ exp.requested_at | date:'MMM d, y, h:mm a' }}</td>
+                  <td><span class="export-status export-status--{{ exp.status }}">{{ exp.status }}</span></td>
+                  <td>{{ exp.row_count ?? '—' }}</td>
+                  <td class="modal__error">{{ exp.error ?? '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    }
+
+  </div>
+</div>

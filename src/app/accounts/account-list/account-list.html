@@ -1,0 +1,121 @@
+<section class="account-list">
+  <header class="account-list__header">
+    <h1>Fleet Accounts</h1>
+    <p class="account-list__count">{{ total() }} accounts</p>
+  </header>
+
+  <div class="account-list__filters">
+    <div class="filter filter--grow">
+      <span>Name</span>
+      <div class="autocomplete">
+        <div class="autocomplete__input-wrap">
+          <input
+            type="text"
+            placeholder="Search by name or ID"
+            [value]="nameInputValue()"
+            (input)="onNameInput($event)"
+            (focus)="showNameResults.set(true)"
+            (blur)="showNameResults.set(false)"
+          />
+          @if (nameInputValue()) {
+            <button class="autocomplete__clear" (mousedown)="clearName()">&#x2715;</button>
+          }
+        </div>
+        @if (showNameResults() && nameResults().length > 0) {
+          <ul class="autocomplete__results">
+            @for (account of nameResults(); track account.id) {
+              <li (mousedown)="selectName(account)">
+                <span class="autocomplete__name">{{ account.name }}</span>
+                <span class="autocomplete__id">{{ account.id }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+
+    <div class="filter">
+      <span>Industry</span>
+      <div class="filter__input-wrap">
+        <select [ngModel]="selectedIndustry()" (ngModelChange)="setIndustry($event)">
+          <option value="">All</option>
+          @for (i of industries; track i) {
+            <option [value]="i">{{ industryLabel[i] }}</option>
+          }
+        </select>
+        @if (selectedIndustry()) {
+          <button class="filter__clear" (click)="setIndustry('')">&#x2715;</button>
+        }
+      </div>
+    </div>
+
+    <div class="filter filter--narrow">
+      <span>Tier</span>
+      <div class="filter__input-wrap">
+        <select [ngModel]="selectedTier()" (ngModelChange)="setTier($event)">
+          <option value="">All</option>
+          @for (t of tiers; track t) {
+            <option [value]="t">{{ tierLabel[t] }}</option>
+          }
+        </select>
+        @if (selectedTier()) {
+          <button class="filter__clear" (click)="setTier('')">&#x2715;</button>
+        }
+      </div>
+    </div>
+
+    @if (hasActiveFilters()) {
+      <div class="filter filter--action">
+        <button class="filter__clear-all" (click)="clearAll()">Clear all</button>
+      </div>
+    }
+  </div>
+
+  <table class="account-list__table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Industry</th>
+        <th>Tier</th>
+        <th>Contact</th>
+        <th>Email</th>
+        <th>Operations</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (account of accounts(); track account.id) {
+        <tr>
+          <td>{{ account.name }}</td>
+          <td>{{ industryLabel[account.industry] }}</td>
+          <td><span class="tier tier--{{ account.tier }}">{{ tierLabel[account.tier] }}</span></td>
+          <td>{{ account.contact_name }}</td>
+          <td>{{ account.contact_email }}</td>
+          <td>
+            <button class="op-btn" (click)="selectedAccount.set(account)" title="View details">&#x2139;</button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <div class="account-list__pagination">
+    <button class="pagination__arrow" (click)="prevPage()" [disabled]="currentPage() === 1">&#8592;</button>
+
+    @for (p of getPageNumbers(); track $index) {
+      @if (p === null) {
+        <span class="pagination__ellipsis">…</span>
+      } @else {
+        <button class="pagination__page" [class.pagination__page--active]="p === currentPage()" (click)="loadPage(p)">{{ p }}</button>
+      }
+    }
+
+    <button class="pagination__arrow" (click)="nextPage()" [disabled]="currentPage() === totalPages()">&#8594;</button>
+  </div>
+
+  @if (selectedAccount()) {
+    <app-account-detail-modal
+      [account]="selectedAccount()!"
+      (closed)="selectedAccount.set(null)"
+    />
+  }
+</section>

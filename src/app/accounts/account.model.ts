@@ -9,6 +9,28 @@ export type AccountIndustry =
   | 'rideshare'
   | 'agriculture';
 
+export const accountIndustryLabel: Record<AccountIndustry, string> = {
+  logistics: 'Logistics',
+  delivery: 'Delivery',
+  waste_mgmt: 'Waste Management',
+  construction: 'Construction',
+  field_service: 'Field Service',
+  rideshare: 'Rideshare',
+  agriculture: 'Agriculture',
+};
+
+export const accountTierLabel: Record<AccountTier, string> = {
+  free: 'Free',
+  pro: 'Pro',
+  enterprise: 'Enterprise',
+};
+
+export interface AccountFilters {
+  name?: string;
+  industry?: AccountIndustry;
+  tier?: AccountTier;
+}
+
 export interface Account {
   id: string;
   name: string;

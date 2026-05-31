@@ -118,7 +118,7 @@
     font-size: 0.85rem;
 
     th, td {
-      text-align: left;
+      text-align: center;
       padding: 0.45rem 0.6rem;
       border-bottom: 1px solid #e5e7eb;
     }
@@ -126,10 +126,13 @@
     th {
       font-weight: 600;
       color: #374151;
-      background: #f1f5f9;
+      background: #e2e8f0;
     }
 
-    tbody tr:hover td { background: #f9fafb; }
+    td:nth-child(odd)  { background: #f9fafb; }
+    td:nth-child(even) { background: #f3f4f6; }
+
+    tbody tr:hover td { filter: brightness(0.97); }
   }
 
   &__no-data {

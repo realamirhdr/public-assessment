@@ -61,7 +61,11 @@
                   <td>{{ user.name }}</td>
                   <td>{{ user.email }}</td>
                   <td><span class="role role--{{ user.role }}">{{ user.role }}</span></td>
-                  <td><span class="scope scope--{{ user.scope }}">{{ user.scope ?? '—' }}</span></td>
+                  <td>
+                    @if (user.scope) {
+                      <span class="scope scope--{{ user.scope }}">{{ user.scope }}</span>
+                    } @else { - }
+                  </td>
                 </tr>
               }
             </tbody>
@@ -91,8 +95,8 @@
                 <tr>
                   <td>{{ exp.requested_at | date:'MMM d, y, h:mm a' }}</td>
                   <td><span class="export-status export-status--{{ exp.status }}">{{ exp.status }}</span></td>
-                  <td>{{ exp.row_count ?? '—' }}</td>
-                  <td class="modal__error">{{ exp.error ?? '—' }}</td>
+                  <td>{{ exp.row_count ?? '-' }}</td>
+                  <td class="modal__error">{{ exp.error ?? '-' }}</td>
                 </tr>
               }
             </tbody>

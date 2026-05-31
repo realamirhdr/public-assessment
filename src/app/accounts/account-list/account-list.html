@@ -85,11 +85,11 @@
     <tbody>
       @for (account of accounts(); track account.id) {
         <tr>
-          <td>{{ account.name }}</td>
-          <td>{{ industryLabel[account.industry] }}</td>
-          <td><span class="tier tier--{{ account.tier }}">{{ tierLabel[account.tier] }}</span></td>
-          <td>{{ account.contact_name }}</td>
-          <td>{{ account.contact_email }}</td>
+          <td>{{ account.name || '-' }}</td>
+          <td>{{ industryLabel[account.industry] || '-' }}</td>
+          <td><span class="tier tier--{{ account.tier }}">{{ tierLabel[account.tier] || '-' }}</span></td>
+          <td>{{ account.contact_name || '-' }}</td>
+          <td>{{ account.contact_email || '-' }}</td>
           <td>
             <button class="op-btn" (click)="selectedAccount.set(account)" title="View details">&#x2139;</button>
           </td>

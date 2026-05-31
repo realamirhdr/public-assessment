@@ -1,9 +1,9 @@
-import { Component, OnInit, inject, input, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { VehicleService } from '../vehicle.service';
-import { VehicleStatus, VehicleViewModel, vehicleStatusLabel } from '../vehicle.model';
+import { VehicleStatus, VehicleViewModel, vehicleStatusLabel, vehicleStatusTooltip } from '../vehicle.model';
 
 type StatusFilter = VehicleStatus | 'all';
 
@@ -21,31 +21,44 @@ export class VehicleList implements OnInit {
   readonly pageSize = input(20);
 
   readonly currentPage = signal(1);
-  readonly totalPages = signal(1);
-
-  readonly vehicles = signal<VehicleViewModel[]>([]);
+  readonly allVehicles = signal<VehicleViewModel[]>([]);
   readonly query = signal('');
+  readonly queryName = signal('');
   readonly selectedStatus = signal<StatusFilter>('all');
 
   readonly statuses: StatusFilter[] = ['all', 'active', 'parked', 'in_maintenance', 'decommissioned'];
-
   readonly statusLabel: Record<StatusFilter, string> = { all: 'All', ...vehicleStatusLabel };
+  readonly statusTooltip = vehicleStatusTooltip;
+
+  readonly filteredVehicles = computed(() => {
+    const q = this.query().toLowerCase();
+    const qName = this.queryName().toLowerCase();
+    const status = this.selectedStatus();
+    return this.allVehicles().filter((v) => {
+      const matchesPlate = q === '' || v.plate.toLowerCase().includes(q);
+      const matchesName = qName === '' || `${v.make} ${v.model}`.toLowerCase().includes(qName);
+      const matchesStatus = status === 'all' || v.status === status;
+      return matchesPlate && matchesName && matchesStatus;
+    });
+  });
+
+  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.filteredVehicles().length / this.pageSize())));
+
+  readonly vehicles = computed(() => {
+    const page = this.currentPage();
+    const size = this.pageSize();
+    return this.filteredVehicles().slice((page - 1) * size, page * size);
+  });
 
   ngOnInit(): void {
     this.currentPage.set(this.page());
-    this.loadPage(this.currentPage());
-  }
-
-  loadPage(page: number): void {
     forkJoin({
-      vehicles: this.vehicleService.getVehicles(page, this.pageSize()),
+      vehicles: this.vehicleService.getAllVehicles(),
       accounts: this.vehicleService.getAccounts(),
     }).subscribe(({ vehicles, accounts }) => {
       const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
-      this.currentPage.set(vehicles.page);
-      this.totalPages.set(vehicles.totalPages);
-      this.vehicles.set(
-        vehicles.items.map(({ account_id, device_id, ...rest }) => ({
+      this.allVehicles.set(
+        vehicles.map(({ account_id, device_id, ...rest }) => ({
           ...rest,
           accountName: accountMap.get(account_id) ?? account_id,
         }))
@@ -53,12 +66,31 @@ export class VehicleList implements OnInit {
     });
   }
 
+  setQuery(q: string): void {
+    this.query.set(q);
+    this.currentPage.set(1);
+  }
+
+  setQueryName(q: string): void {
+    this.queryName.set(q);
+    this.currentPage.set(1);
+  }
+
+  setStatus(s: StatusFilter): void {
+    this.selectedStatus.set(s);
+    this.currentPage.set(1);
+  }
+
+  loadPage(page: number): void {
+    this.currentPage.set(page);
+  }
+
   prevPage(): void {
-    if (this.currentPage() > 1) this.loadPage(this.currentPage() - 1);
+    if (this.currentPage() > 1) this.currentPage.set(this.currentPage() - 1);
   }
 
   nextPage(): void {
-    if (this.currentPage() < this.totalPages()) this.loadPage(this.currentPage() + 1);
+    if (this.currentPage() < this.totalPages()) this.currentPage.set(this.currentPage() + 1);
   }
 
   getPageNumbers(): (number | null)[] {
@@ -82,15 +114,5 @@ export class VehicleList implements OnInit {
     pages.push(total);
 
     return pages;
-  }
-
-  getFilteredVehicles(): VehicleViewModel[] {
-    const q = this.query();
-    const status = this.selectedStatus();
-    return this.vehicles().filter((v) => {
-      const matchesPlate = q === '' || v.plate.includes(q);
-      const matchesStatus = status === 'all' || v.status === status;
-      return matchesPlate && matchesStatus;
-    });
   }
 }

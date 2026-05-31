@@ -20,6 +20,10 @@ export class VehicleService {
     .get<Vehicle[]>('/dataset/vehicles.json')
     .pipe(shareReplay(1));
 
+  getAllVehicles(): Observable<Vehicle[]> {
+    return this.vehicles$.pipe(delay(300));
+  }
+
   getVehicles(page = 1, pageSize = 20): Observable<Page<Vehicle>> {
     return this.vehicles$.pipe(
       map((all) => {

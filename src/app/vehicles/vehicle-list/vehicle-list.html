@@ -146,6 +146,7 @@
   <app-vehicle-map [filters]="activeFilters()" />
   }
 
+  @if (view() === 'table') {
   <div class="vehicle-list__pagination">
     <button class="pagination__arrow" (click)="prevPage()" [disabled]="currentPage() === 1">&#8592;</button>
 
@@ -160,4 +161,5 @@
 
     <button class="pagination__arrow" (click)="nextPage()" [disabled]="currentPage() === totalPages()">&#8594;</button>
   </div>
+  }
 </section>

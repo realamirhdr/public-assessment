@@ -66,8 +66,8 @@ export class VehicleMap implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.map = L.map(this.mapEl().nativeElement, {
-      center: [39.5, -98.35],
-      zoom: 4,
+      center: [43.7417, -79.3733],
+      zoom: 6,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

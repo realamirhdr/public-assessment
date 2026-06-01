@@ -54,6 +54,14 @@
     td:nth-child(even) { background: #f3f4f6; }
 
     tbody tr:hover td { filter: brightness(0.97); }
+
+    .table-empty {
+      text-align: center;
+      padding: 2rem;
+      color: #9ca3af;
+      font-size: 0.9rem;
+      background: #f9fafb;
+    }
   }
 }
 

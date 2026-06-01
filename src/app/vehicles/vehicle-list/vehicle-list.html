@@ -143,6 +143,10 @@
           <button class="op-btn" (click)="selectedVehicle.set(vehicle)" title="View details">&#x2139;</button>
         </td>
       </tr>
+      } @empty {
+      <tr>
+        <td colspan="7" class="table-empty">No vehicles found.</td>
+      </tr>
       }
     </tbody>
   </table>

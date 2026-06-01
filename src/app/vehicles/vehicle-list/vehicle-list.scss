@@ -93,6 +93,13 @@
       filter: brightness(0.97);
     }
 
+    .table-empty {
+      text-align: center;
+      padding: 2rem;
+      color: #9ca3af;
+      font-size: 0.9rem;
+      background: #f9fafb;
+    }
   }
 
   &__pagination {
